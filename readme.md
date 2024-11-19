@@ -62,47 +62,6 @@ curl -X POST \
   -d '{"doc_id": "abcdef9", "email": "me@example.com", "passcode": "123example123", "format": "pdf", "output": "doc.pdf"}'
 ```
 
-Example Flask service code:
-```python
-Copy code
-from flask import Flask, request, jsonify
-from docsend import DocSend
-
-app = Flask(__name__)
-
-@app.route('/download', methods=['POST'])
-def download_document():
-    data = request.json
-
-    doc_id = data.get('doc_id')
-    email = data.get('email')
-    passcode = data.get('passcode')
-    file_format = data.get('format', 'pdf')
-    output = data.get('output', f'docsend_{doc_id}.{file_format}')
-
-    # Initialize DocSend object
-    ds = DocSend(doc_id)
-    ds.fetch_meta()
-    
-    if email:
-        if passcode:
-            ds.authorize(email, passcode)
-        else:
-            ds.authorize(email)
-    
-    ds.fetch_images()
-    
-    if file_format == 'pdf':
-        ds.save_pdf(output)
-    elif file_format == 'png':
-        ds.save_images(output)
-
-    return jsonify({"message": f"File saved to {output}"}), 200
-
-if __name__ == '__main__':
-    app.run(debug=True)
-```
-
 ## Missing features
 
 You are welcome to contribute.
