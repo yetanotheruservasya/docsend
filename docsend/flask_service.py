@@ -1,6 +1,7 @@
 import os
 from flask import Flask, request, jsonify, send_file
 from docsend import DocSend
+from urllib.parse import urlparse
 
 app = Flask(__name__)
 
@@ -8,17 +9,19 @@ app = Flask(__name__)
 def download_document():
     data = request.get_json()
 
-    if 'doc_id' not in data:
+    if 'doc_url' not in data:
         return jsonify({'error': 'doc_id is required'}), 400
 
-    doc_id = data['doc_id']
+    doc_url = data['doc_url']
+    parsed_url = urlparse(doc_url)
+    doc_id = parsed_url.path.rpartition('/')[-1]
     email = data.get('email')
     passcode = data.get('passcode')
     format = data.get('format', 'pdf')
 
     output = os.path.join(os.getcwd(), f'docsend_{doc_id}.pdf') if format == 'pdf' else os.path.join(os.getcwd(), f'docsend_{doc_id}')
 
-    ds = DocSend(doc_id)
+    ds = DocSend(doc_url)
 
     try:
         ds.fetch_meta()
@@ -52,4 +55,4 @@ def download_document():
 
 
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', debug=False)
+    app.run(host='0.0.0.0', debug=True)

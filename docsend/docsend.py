@@ -4,13 +4,16 @@ from pathlib import Path
 
 from PIL import Image
 from requests_html import HTMLSession
+from urllib.parse import urlparse
 
 
 class DocSend:
 
-    def __init__(self, doc_id):
-        self.doc_id = doc_id.rpartition('/')[-1]
-        self.url = f'https://docsend.com/view/{doc_id}'
+    def __init__(self, view_url):
+        parsed_url = urlparse(view_url)
+        self.domain = parsed_url.netloc  # Извлекаем домен (например, cft.docsend.com)
+        self.doc_id = parsed_url.path.rpartition('/')[-1]  # Извлекаем идентификатор документа
+        self.url = f'https://{self.domain}/view/{self.doc_id}'  # Собираем полный URL
         self.s = HTMLSession()
 
     def fetch_meta(self):
