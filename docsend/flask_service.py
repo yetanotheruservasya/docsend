@@ -8,11 +8,13 @@ import threading
 from urllib.parse import urlparse
 from flask import Flask, request, jsonify, send_file, after_this_request
 from docsend import DocSend
-from werkzeug.utils import safe_join
 
 app = Flask(__name__)
 
 def delayed_remove_file(path):
+    """
+    Remove the specified file after a delay.
+    """
     def remove():
         try:
             os.remove(path)
