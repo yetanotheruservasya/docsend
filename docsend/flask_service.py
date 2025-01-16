@@ -1,12 +1,31 @@
+"""
+Flask service for downloading documents from DocSend.
+"""
+
 import os
-from flask import Flask, request, jsonify, send_file
-from docsend import DocSend
+import tempfile
+import threading
 from urllib.parse import urlparse
+from flask import Flask, request, jsonify, send_file, after_this_request
+from docsend import DocSend
+from werkzeug.utils import safe_join
 
 app = Flask(__name__)
 
+def delayed_remove_file(path):
+    def remove():
+        try:
+            os.remove(path)
+        except (OSError, PermissionError) as e:
+            app.logger.error('Failed to delete the file %s: %s', path, str(e))
+    threading.Timer(5, remove).start()
+
 @app.route('/download', methods=['POST'])
 def download_document():
+    """
+    Endpoint to download a document from DocSend.
+    Expects a JSON payload with 'doc_url', and optionally 'email', 'passcode', and 'format'.
+    """
     data = request.get_json()
 
     if 'doc_url' not in data:
@@ -17,9 +36,12 @@ def download_document():
     doc_id = parsed_url.path.rpartition('/')[-1]
     email = data.get('email')
     passcode = data.get('passcode')
-    format = data.get('format', 'pdf')
+    file_format = data.get('format', 'pdf')
 
-    output = os.path.join(os.getcwd(), f'docsend_{doc_id}.pdf') if format == 'pdf' else os.path.join(os.getcwd(), f'docsend_{doc_id}')
+    print(doc_url, doc_id, email, passcode, file_format)
+
+    with tempfile.NamedTemporaryFile(delete=False, suffix=f'.{file_format}') as temp_file:
+        output = temp_file.name
 
     ds = DocSend(doc_url)
 
@@ -32,9 +54,9 @@ def download_document():
                 ds.authorize(email)
         ds.fetch_images()
 
-        if format == 'pdf':
+        if file_format == 'pdf':
             ds.save_pdf(output)
-        elif format == 'png':
+        elif file_format == 'png':
             ds.save_images(output)
         else:
             return jsonify({'error': 'Invalid format specified. Use "pdf" or "png".'}), 400
@@ -42,16 +64,14 @@ def download_document():
         if not os.path.exists(output):
             return jsonify({'error': f'File not created: {output}'}), 500
 
-        response = send_file(output, as_attachment=True)
-        return response
-    except Exception as e:
+        @after_this_request
+        def remove_file(response):
+            delayed_remove_file(output)
+            return response
+
+        return send_file(output, as_attachment=True)
+    except (ValueError, ConnectionError, FileNotFoundError) as e:
         return jsonify({'error': f'Failed to process document: {str(e)}'}), 500
-    finally:
-        if os.path.exists(output):
-            try:
-                os.remove(output)
-            except Exception as e:
-                app.logger.error(f'Failed to delete the file {output}: {str(e)}')
 
 
 if __name__ == '__main__':

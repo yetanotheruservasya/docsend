@@ -1,11 +1,12 @@
 import requests
-import json
 
 # URL вашего сервера Flask
 url = 'http://localhost:5000/download'
 
 
-docsend_url = "https://docsend.com/view/833trbqw3xjrfaa2"
+#docsend_url = "https://docsend.com/view/nzppxee7abw8p487/d/wqywyjs8pwg42eac"
+docsend_url = "https://docsend.com/view/wwjxgffq5trma9g9"
+#docsend_url = "https://sizable.docsend.com/view/ixntv94j3i8kuuah"
 
 doc_id = docsend_url.rsplit('/', 1)[-1]
 
