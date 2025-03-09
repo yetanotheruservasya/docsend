@@ -5,9 +5,22 @@ Flask service for downloading documents from DocSend.
 import os
 import tempfile
 import threading
+import sys
 from urllib.parse import urlparse
 from flask import Flask, request, jsonify, send_file, after_this_request
-from docsend import DocSend
+
+# Try importing DocSend and handle the specific lxml dependency error
+try:
+    from docsend import DocSend
+except ImportError as e:
+    if "lxml.html.clean module is now a separate project" in str(e):
+        print("Error: Missing required dependency.")
+        print("The lxml.html.clean module is now a separate project.")
+        print("Please run: pip install lxml[html_clean] or pip install lxml_html_clean")
+        sys.exit(1)
+    else:
+        # Re-raise if it's a different import error
+        raise
 
 app = Flask(__name__)
 
